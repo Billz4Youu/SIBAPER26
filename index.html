@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIBAPER 26 - Mobile Pro Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #4361ee; --success: #2ecc71; --warning: #f1c40f; --danger: #e74c3c; --bg: #f4f7fe; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        
+        /* Animasi Background Liquid */
+        body.liquid-bg { 
+            background: linear-gradient(-45deg, #0f2027, #2c5364, #203a43, #23d5ab); 
+            background-size: 400% 400%; animation: liquid 15s ease infinite; 
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px;
+        }
+        @keyframes liquid { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
+
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px); 
+            border-radius: 25px; padding: 30px 20px; width: 100%; max-width: 400px; 
+            border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; color: white; 
+        }
+
+        .hidden { display: none !important; }
+        input, select { width: 100%; padding: 14px; border-radius: 12px; border: none; margin-bottom: 12px; background: rgba(255,255,255,0.2); color: white; outline: none; font-size: 16px; }
+        input::placeholder { color: rgba(255,255,255,0.7); }
+        select option { background: #2c5364; color: white; }
+        .btn-primary { background: white; color: #2c5364; font-weight: bold; padding: 15px; border-radius: 12px; border: none; cursor: pointer; width: 100%; font-size: 16px; transition: 0.3s; }
+        .btn-disabled { opacity: 0.5; cursor: not-allowed; background: #ccc !important; }
+
+        /* --- ADMIN DASHBOARD (MOBILE OPTIMIZED) --- */
+        #pageAdmin { background: var(--bg); display: none; flex-direction: column; min-height: 100vh; width: 100%; }
+        
+        /* Header Mobile */
+        .admin-header { background: white; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .admin-header h2 { font-size: 1.2rem; color: var(--primary); }
+
+        .main-content { padding: 15px; flex: 1; }
+
+        /* Filter Section */
+        .filter-section { background: white; border-radius: 20px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .filter-section input { background: #f0f3ff; color: #333; margin-bottom: 8px; padding: 10px; }
+
+        /* Stats Grid */
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: white; padding: 15px; border-radius: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .stat-card h3 { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+        .stat-card h2 { font-size: 1.4rem; margin-top: 5px; }
+
+        /* Data Card (List Siswa) */
+        .data-list { background: white; border-radius: 20px; padding: 15px; margin-bottom: 15px; }
+        .siswa-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .siswa-info h4 { font-size: 0.9rem; color: #333; }
+        .siswa-info p { font-size: 0.7rem; color: #999; }
+        .badge { padding: 4px 10px; border-radius: 8px; color: white; font-size: 0.65rem; font-weight: bold; }
+        .hadir { background: var(--success); } .izin { background: var(--warning); color: #333; } .sakit { background: var(--danger); }
+        .btn-map { color: var(--primary); font-size: 0.7rem; text-decoration: none; font-weight: bold; }
+
+        /* Chart Section */
+        .chart-container { background: white; border-radius: 20px; padding: 20px; text-align: center; }
+
+        .btn-logout { background: #fff1f2; color: #e11d48; border: none; padding: 12px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body id="mainBody" class="liquid-bg">
+
+    <div id="pageLanding" class="glass-card">
+        <h1 style="font-size: 2.2rem;">SIBAPER</h1>
+        <p style="letter-spacing: 2px; font-size: 0.7rem; margin-bottom: 30px; opacity: 0.8;">SISTEM ABSENSI KELAS 26</p>
+        <button class="btn-primary" onclick="showPage('pageSiswa')" style="margin-bottom: 15px;">ABSENSI SEBAGAI SISWA</button>
+        <button class="btn-primary" style="background:none; color:white; border:1px solid white;" onclick="showPage('pageLoginAdmin')">LOGIN SEBAGAI ADMIN</button>
+    </div>
+
+    <div id="pageSiswa" class="glass-card hidden">
+        <h2>ABSEN SISWA</h2>
+        <p id="statusGPS" style="font-size: 0.8rem; margin: 15px 0; color: #ffeb3b; font-weight: bold;">🔒 Menunggu Izin GPS...</p>
+        <form id="formAbsen">
+            <input type="text" name="nama" placeholder="Nama Lengkap" required>
+            <select name="keterangan" required>
+                <option value="" disabled selected>Pilih Status</option>
+                <option value="Hadir">Hadir</option>
+                <option value="Izin">Izin</option>
+                <option value="Sakit">Sakit</option>
+            </select>
+            <button type="submit" id="btnKirim" class="btn-primary btn-disabled" disabled>KIRIM KEHADIRAN</button>
+        </form>
+        <p onclick="showPage('pageLanding')" style="margin-top:20px; cursor:pointer; font-size:0.8rem; opacity: 0.7;">← Kembali</p>
+    </div>
+
+    <div id="pageLoginAdmin" class="glass-card hidden">
+        <h2>ADMIN LOGIN</h2>
+        <input type="text" id="userAdmin" placeholder="Username">
+        <input type="password" id="passAdmin" placeholder="Password">
+        <button class="btn-primary" onclick="doLogin()">MASUK DASHBOARD</button>
+        <p onclick="showPage('pageLanding')" style="margin-top:20px; cursor:pointer; font-size:0.8rem; opacity: 0.7;">← Kembali</p>
+    </div>
+
+    <div id="pageAdmin">
+        <div class="admin-header">
+            <h2>SIBAPER 26</h2>
+            <div id="tglDisplay" style="font-size: 0.7rem; font-weight: bold; color: #666;"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="filter-section">
+                <span style="font-size: 0.7rem; font-weight: bold; color: #aaa; display: block; margin-bottom: 5px;">FILTER DATA</span>
+                <input type="date" id="filterTanggal" onchange="ambilData()">
+                <input type="text" id="cariNama" onkeyup="cariSiswa()" placeholder="Cari nama siswa...">
+                <button onclick="downloadCSV()" style="width: 100%; background: var(--success); color: white; border: none; padding: 10px; border-radius: 10px; font-weight: bold; font-size: 0.8rem;">📥 Download Excel (.csv)</button>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-card"><h3>Total</h3><h2 id="txtTotal">0</h2></div>
+                <div class="stat-card"><h3>Hadir</h3><h2 id="txtHadir" style="color: var(--success);">0</h2></div>
+                <div class="stat-card"><h3>Izin</h3><h2 id="txtIzin" style="color: var(--warning);">0</h2></div>
+                <div class="stat-card"><h3>Sakit</h3><h2 id="txtSakit" style="color: var(--danger);">0</h2></div>
+            </div>
+
+            <div class="data-list">
+                <h3 style="font-size: 0.9rem; margin-bottom: 10px; border-bottom: 2px solid #f4f7fe; padding-bottom: 5px;">Daftar Absensi (A-Z)</h3>
+                <div id="isiList">
+                    </div>
+            </div>
+
+            <div class="chart-container">
+                <h3 style="font-size: 0.9rem; margin-bottom: 15px;">Persentase Kehadiran</h3>
+                <canvas id="myChart"></canvas>
+            </div>
+
+            <button class="btn-logout" onclick="location.reload()">LOGOUT</button>
+        </div>
+    </div>
+
+    <script>
+        // GANTI DENGAN LINK EXEC GOOGLE SCRIPT LU
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyij-D6Yvi80mf3OFZoBseGpKm3YOs2rQXMeesyeMmud4gB0iKKVTZMsCOPT2CcVCjwMA/exec';
+        
+        let lokasiSiswa = null;
+        let chartInstance = null;
+
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filterTanggal').value = today;
+        };
+
+        // GPS Protection
+        function getGPS() {
+            const btn = document.getElementById('btnKirim');
+            const status = document.getElementById('statusGPS');
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((p) => {
+                    lokasiSiswa = p.coords.latitude + "," + p.coords.longitude;
+                    status.innerText = "✅ Lokasi Terkunci! Silahkan Absen.";
+                    status.style.color = "#2ecc71";
+                    btn.disabled = false; btn.classList.remove('btn-disabled');
+                }, () => {
+                    status.innerText = "❌ Wajib Aktifkan GPS!";
+                    status.style.color = "#ff4757";
+                    alert("Akses lokasi ditolak. Silahkan aktifkan GPS dan refresh.");
+                }, { enableHighAccuracy: true });
+            }
+        }
+
+        function showPage(id) {
+            document.querySelectorAll('.glass-card').forEach(c => c.classList.add('hidden'));
+            document.getElementById('pageAdmin').style.display = 'none';
+            document.getElementById('mainBody').classList.add('liquid-bg');
+            if(id === 'pageAdmin'){
+                document.getElementById('pageAdmin').style.display = 'flex';
+                document.getElementById('mainBody').classList.remove('liquid-bg');
+            } else {
+                document.getElementById(id).classList.remove('hidden');
+                if(id === 'pageSiswa') getGPS();
+            }
+        }
+
+        function doLogin() {
+            if(document.getElementById('userAdmin').value === 'admin26' && document.getElementById('passAdmin').value === 'sibaper26'){
+                showPage('pageAdmin'); ambilData();
+            } else { alert("Login Gagal!"); }
+        }
+
+        document.getElementById('formAbsen').addEventListener('submit', e => {
+            e.preventDefault();
+            const btn = document.getElementById('btnKirim');
+            btn.disabled = true; btn.innerText = "Mengirim...";
+            let fd = new FormData(e.target);
+            fd.append('lokasi', lokasiSiswa);
+            fetch(scriptURL, { method: 'POST', body: fd })
+                .then(() => { alert("Absen Berhasil!"); location.reload(); });
+        });
+
+        async function ambilData() {
+            const res = await fetch(scriptURL);
+            let rawData = await res.json();
+            const filterDate = document.getElementById('filterTanggal').value;
+            
+            // Format Label Tanggal
+            document.getElementById('tglDisplay').innerText = new Date(filterDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+
+            // Filter & Sort A-Z
+            let data = rawData.filter(r => new Date(r[2]).toISOString().split('T')[0] === filterDate);
+            data.sort((a,b) => a[0].localeCompare(b[0]));
+
+            const listCont = document.getElementById('isiList');
+            listCont.innerHTML = '';
+            let h=0, i=0, s=0;
+
+            if(data.length === 0) listCont.innerHTML = '<p style="text-align:center; padding:20px; color:#ccc; font-size:0.8rem;">Belum ada data hari ini.</p>';
+
+            data.forEach(r => {
+                const st = r[1].toLowerCase();
+                if(st==='hadir') h++; else if(st==='izin') i++; else if(st==='sakit') s++;
+                const jam = new Date(r[2]).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+                
+                const div = document.createElement('div');
+                div.className = "siswa-item";
+                div.innerHTML = `
+                    <div class="siswa-info">
+                        <h4 class="nm">${r[0]}</h4>
+                        <p>${jam} WIB • <a href="https://www.google.com/maps?q=${r[3]}" class="btn-map" target="_blank">📍 Cek Lokasi</a></p>
+                    </div>
+                    <span class="badge ${st}">${r[1]}</span>
+                `;
+                listCont.appendChild(div);
+            });
+
+            document.getElementById('txtTotal').innerText = data.length;
+            document.getElementById('txtHadir').innerText = h;
+            document.getElementById('txtIzin').innerText = i;
+            document.getElementById('txtSakit').innerText = s;
+
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(document.getElementById('myChart'), {
+                type: 'doughnut',
+                data: { labels: ['Hadir','Izin','Sakit'], datasets:[{data:[h,i,s], backgroundColor:['#2ecc71','#f1c40f','#e74c3c'], borderWidth:0}]},
+                options: { plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        function cariSiswa() {
+            let k = document.getElementById('cariNama').value.toLowerCase();
+            document.querySelectorAll('.siswa-item').forEach(item => {
+                item.style.display = item.querySelector('.nm').innerText.toLowerCase().includes(k) ? "flex" : "none";
+            });
+        }
+
+        function downloadCSV() {
+            const filterDate = document.getElementById('filterTanggal').value;
+            let csv = "Nama,Status,Jam,Koordinat\n";
+            document.querySelectorAll(".siswa-item").forEach(item => {
+                const nm = item.querySelector('.nm').innerText;
+                const st = item.querySelector('.badge').innerText;
+                csv += `${nm},${st},-,-\n`;
+            });
+            const blob = new Blob([csv], {type:'text/csv'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Rekap_26_${filterDate}.csv`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
